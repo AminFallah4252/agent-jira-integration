@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jira-management"
+version = "1.0.0"
+description = "Cross-platform Jira Management skill and SDK for autonomous AI agents with Zero-Leak security and enforced board ordering."
+authors = [{ name = "Antigravity Agent Framework" }]
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["jira", "agile", "kanban", "scrum", "antigravity", "automation", "ai-agent"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Bug Tracking",
+]
+
+[project.scripts]
+jira = "jira_cli:main"
