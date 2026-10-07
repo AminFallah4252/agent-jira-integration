@@ -1,20 +1,67 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "jira-management"
 version = "1.0.0"
-description = "Cross-platform Jira Management skill and SDK for autonomous AI agents with Zero-Leak security and enforced board ordering."
-authors = [{ name = "Antigravity Agent Framework" }]
+description = "Enterprise cross-platform Jira Management skill, zero-dependency SDK and CLI for autonomous AI agents."
 readme = "README.md"
 requires-python = ">=3.8"
-keywords = ["jira", "agile", "kanban", "scrum", "antigravity", "automation", "ai-agent"]
+license = { text = "MIT" }
+authors = [
+    { name = "Amin Fallah", email = "aminfallah4252@users.noreply.github.com" },
+]
+keywords = [
+    "jira",
+    "atlassian",
+    "agile",
+    "kanban",
+    "scrum",
+    "antigravity",
+    "automation",
+    "ai-agent",
+    "zero-leak",
+    "cli",
+    "sdk",
+]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Bug Tracking",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+    "Typing :: Typed",
 ]
 
 [project.scripts]
-jira = "jira_cli:main"
+jira = "jira_management.cli:main"
+jira-management = "jira_management.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/AminFallah4252/agent-jira-integration"
+Repository = "https://github.com/AminFallah4252/agent-jira-integration"
+Issues = "https://github.com/AminFallah4252/agent-jira-integration/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+jira_management = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "scripts"]

@@ -3,18 +3,33 @@
 .agents/
 .env
 .env.*
+*.pem
+*.key
+*token*
 *.jsonl
 
-# Python cache & build
+# Python cache & build artifacts
 __pycache__/
 *.py[cod]
 *$py.class
 *.egg-info/
+*.egg
 dist/
 build/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
 
 # IDE & Editor
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# OS & Environment
+.DS_Store
+Thumbs.db
