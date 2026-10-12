@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "jira-management": {
+      "command": "python",
+      "args": [
+        "-m",
+        "jira_management",
+        "mcp"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "jira_auth_status",
+        "jira_get_issue",
+        "jira_search_issues",
+        "jira_audit_board",
+        "jira_view_board",
+        "jira_list_projects",
+        "jira_list_sprints"
+      ]
+    }
+  }
+}

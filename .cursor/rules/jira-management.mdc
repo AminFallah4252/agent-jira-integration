@@ -1,0 +1,20 @@
+---
+description: Enforces Jira Management agile board ordering, sequential issue transitions, and Definition of Done (DoD) gates.
+globs: **/*
+alwaysApply: true
+---
+
+# Jira Management Rules for Cursor
+
+When working on tasks linked to Jira in this project:
+
+1. **Verify Credentials**: Check Jira connectivity using `jira auth status --json`.
+2. **Follow 5-Stage Order**:
+   - `Backlog` -> `To Do` -> `In Progress` -> `In Review` -> `Done`.
+   - Never skip `In Progress` or `In Review`.
+3. **Definition of Done (DoD)**:
+   - Moving to `Done` is gated. You must run tests and provide proof via:
+     `jira issue transition --key <KEY> --to "Done" --comment "Verified: <test results>"`
+4. **Zero-Leak**:
+   - Never output or log API tokens.
+   - Cache lives safely in `.agent/jira.json` or `.cursor/jira.json`.

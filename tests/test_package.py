@@ -55,6 +55,14 @@ class TestPackageStructure(unittest.TestCase):
             "validate_issue_transition_order",
             "build_parser",
             "main",
+            "SUPPORTED_AGENTS",
+            "list_supported_agents",
+            "setup_agent_rules",
+            "get_mcp_config_dict",
+            "McpServer",
+            "run_mcp_server",
+            "execute_tool",
+            "TOOLS_DEFINITIONS",
         ]
         for exp in expected_exports:
             self.assertTrue(hasattr(jira_management, exp), f"Missing export: {exp}")
@@ -71,6 +79,8 @@ class TestPackageStructure(unittest.TestCase):
         self.assertIn("issue", subparsers_action.choices)
         self.assertIn("sprint", subparsers_action.choices)
         self.assertIn("project", subparsers_action.choices)
+        self.assertIn("agents", subparsers_action.choices)
+        self.assertIn("mcp", subparsers_action.choices)
 
     def test_module_execution_help(self):
         res = subprocess.run(

@@ -1,16 +1,15 @@
 ---
 name: jira-management
 description: >-
-  Manage Jira Cloud and Data Center workspaces, configure API tokens/PATs, enforce standardized agile
-  boards, track sprints, and orchestrate issue lifecycles across any project. Safely caches credentials
-  per project in .agent/jira.json with Zero-Leak gitignore protection and permission hardening.
-  Cross-platform execution (Windows, Linux, macOS) for issue tracking, transitions, worklogs, board
-  auditing, and sprint management.
+  Manage Jira Cloud and Data Center workspaces across all AI coding agents (Claude, Cursor, Copilot,
+  Windsurf, Cline, Antigravity, and Universal AGENTS.md). Configure API tokens/PATs, enforce standardized
+  agile boards, track sprints, run stdio MCP server, and orchestrate issue lifecycles. Safely caches
+  credentials per project with Zero-Leak gitignore protection and permission hardening.
 ---
 
 # Jira Management Skill
 
-A cross-platform, enterprise-grade skill for managing Jira Cloud and Jira Data Center/Server workspaces, securely caching API tokens on a per-project basis, enforcing standardized agile board workflows, executing sequential issue lifecycles with Definition of Done (DoD) verification gates, and orchestrating sprints.
+A cross-platform, enterprise-grade skill and SDK for managing Jira Cloud and Jira Data Center/Server workspaces across **all AI coding agents and IDEs** (Anthropic Claude, Cursor IDE, Windsurf, GitHub Copilot, Cline, Roo Code, Google Antigravity, and universal LLMs). Securely caches API tokens on a per-project basis, enforces standardized agile board workflows, executes sequential issue lifecycles with Definition of Done (DoD) verification gates, provides a built-in Model Context Protocol (MCP) server, and orchestrates sprints.
 
 ---
 
@@ -20,13 +19,13 @@ Whenever Jira operations are requested, the agent resolves credentials and proje
 
 ```mermaid
 flowchart TD
-    UserReq[User Request: Jira Operation] --> ResolveCreds{Resolve Credentials Ladder}
+    UserReq[User / Agent Request: Jira Operation] --> ResolveCreds{Resolve Credentials Ladder}
     
     ResolveCreds -->|1. Explicit CLI Flags| CredsFound[Credentials Resolved]
-    ResolveCreds -->|2. .agent/jira.json| CredsFound
+    ResolveCreds -->|2. Multi-Agent Project Cache<br/>.agent / .claude / .cursor| CredsFound
     ResolveCreds -->|3. Project .env| CredsFound
     ResolveCreds -->|4. Environment Variables| CredsFound
-    ResolveCreds -->|5. Global ~/.gemini/config/jira.json| CredsFound
+    ResolveCreds -->|5. Global Caches<br/>~/.claude, ~/.cursor, ~/.gemini, ~/.config/jira| CredsFound
     ResolveCreds -->|6. None Found| PromptUser[Prompt User for Jira URL & Token/Email]
     
     PromptUser --> ValidateInput[Validate Connectivity via /rest/api/3/myself]
@@ -40,7 +39,7 @@ flowchart TD
     AuditBoard -->|Ordered Transition Gate| VerifyDoD{DoD Evidence Provided?}
     VerifyDoD -->|Yes| ExecuteOp
     VerifyDoD -->|No / Illegal Skip| BlockTransition[Block Transition & Prompt for DoD Proof]
-    ExecuteOp --> ReturnResult[Return Structured Output / JSON]
+    ExecuteOp --> ReturnResult[Return Structured Output / JSON / MCP Result]
 ```
 
 ---
@@ -50,13 +49,21 @@ flowchart TD
 Credentials are automatically resolved in the following strict priority order:
 
 1. **Explicit Flags**: `--url <URL> --token <TOKEN> [--email <EMAIL>]`
-2. **Project Cache**: `<project_root>/.agent/jira.json`
+2. **Project Caches**:
+   - `<project_root>/.agent/jira.json`
+   - `<project_root>/.claude/jira.json`
+   - `<project_root>/.cursor/jira.json`
 3. **Project `.env` File**: `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` (or `JIRA_PAT`)
 4. **Process Environment**: `os.environ["JIRA_URL"]`, `os.environ["JIRA_API_TOKEN"]`
-5. **Global User Cache**: `~/.gemini/config/jira.json`
+5. **Global User Caches**:
+   - `~/.gemini/config/jira.json` (Google Antigravity)
+   - `~/.claude/jira.json` (Anthropic Claude)
+   - `~/.cursor/jira.json` (Cursor IDE)
+   - `~/.config/jira/jira.json` (Linux / XDG Standard)
+   - `~/.jira/jira.json` or `~/.jira/config.json`
 
 ### 🛡️ Safety & Per-Project Caching Directives
-- **Automatic `.gitignore` Protection**: Caching credentials automatically verifies that `.agent/` and `.env*` are listed in the project's `.gitignore`. If missing, they are appended automatically.
+- **Automatic `.gitignore` Protection**: Caching credentials automatically verifies that `.agent/`, `.claude/jira.json`, `.cursor/jira.json`, and `.env*` are listed in the project's `.gitignore`. If missing, they are appended automatically.
 - **Strict File Permissions**:
   - **POSIX (Linux/macOS)**: Directory permissions `0700` (`rwx------`), file permissions `0600` (`rw-------`).
   - **Windows**: Stored within user-owned directories with restricted inheritance.
@@ -226,6 +233,73 @@ python scripts/jira_cli.py project get --key PROJ
 
 ---
 
+### 6. Multi-Agent Setup & MCP Configuration (`agents`)
+
+The skill natively equips all major AI agents and IDEs with customized rules and MCP tool bindings.
+
+```bash
+# List supported agents and their integration status in current project
+python scripts/jira_cli.py agents list
+
+# Output status as JSON
+python scripts/jira_cli.py agents list --json
+
+# Setup instruction and rule files for all agents in current workspace
+python scripts/jira_cli.py agents setup
+
+# Setup rules for a specific agent (e.g., Cursor, Claude, Windsurf)
+python scripts/jira_cli.py agents setup --agent cursor
+python scripts/jira_cli.py agents setup --agent claude
+
+# Export MCP configuration JSON
+python scripts/jira_cli.py agents mcp-config
+
+# Write MCP configurations directly to .cursor/mcp.json and .mcp.json
+python scripts/jira_cli.py agents mcp-config --write
+```
+
+---
+
+### 7. Zero-Dependency Model Context Protocol (MCP) Server (`mcp`)
+
+Run the stdio MCP server for direct tool execution in Claude Desktop, Claude Code, Cursor, Windsurf, or Cline:
+
+```bash
+# Start MCP server over stdio
+python -m jira_management mcp
+# or
+jira mcp
+```
+
+Exposed MCP Tools:
+- `jira_auth_status`: Masked authentication and connection check.
+- `jira_board_audit`: Agile board compliance scoring against 5-stage standard.
+- `jira_board_view`: Stage-bucketed board issues inspection.
+- `jira_create_issue`: Create Jira task/bug with markdown description.
+- `jira_get_issue`: Detailed issue inspection with current stage mapping.
+- `jira_transition_issue`: Sequential transitions enforcing DoD gate verification.
+- `jira_comment_issue`: Add issue comments.
+- `jira_worklog_issue`: Log time spent with descriptions.
+- `jira_search_issues`: JQL query execution.
+- `jira_list_projects`: Workspace projects list.
+- `jira_list_sprints`: Scrum board sprint list.
+
+---
+
+## 🤖 Supported AI Agents & Integration Matrix
+
+| Agent / IDE | Configuration File(s) | Native Support Mode |
+| :--- | :--- | :--- |
+| **Universal Agents** | [AGENTS.md](file:///d:/Projects/Personal/agent-jira-integration/AGENTS.md) | Standardized LLM prompt & CLI |
+| **Anthropic Claude & Claude Code** | [CLAUDE.md](file:///d:/Projects/Personal/agent-jira-integration/CLAUDE.md), [.mcp.json](file:///d:/Projects/Personal/agent-jira-integration/.mcp.json) | CLI instructions + MCP server |
+| **Cursor IDE** | [.cursorrules](file:///d:/Projects/Personal/agent-jira-integration/.cursorrules), [.cursor/rules/jira-management.mdc](file:///d:/Projects/Personal/agent-jira-integration/.cursor/rules/jira-management.mdc), [.cursor/mcp.json](file:///d:/Projects/Personal/agent-jira-integration/.cursor/mcp.json) | Cursor Composer rules + MCP server |
+| **Windsurf / Codeium** | [.windsurfrules](file:///d:/Projects/Personal/agent-jira-integration/.windsurfrules) | Cascade rules + CLI |
+| **GitHub Copilot** | [.github/copilot-instructions.md](file:///d:/Projects/Personal/agent-jira-integration/.github/copilot-instructions.md) | Copilot Workspace & Chat |
+| **Cline & Roo Code** | [.clinerules](file:///d:/Projects/Personal/agent-jira-integration/.clinerules) | Autonomous agent rules + MCP server |
+| **Google Antigravity** | [SKILL.md](file:///d:/Projects/Personal/agent-jira-integration/SKILL.md) | Native Antigravity Skill Engine |
+
+---
+
 ## 🤖 Subagent Sandboxing & Integration Pattern
 
 When autonomous agents or subagents interact with Jira, adhere to the following contract:
@@ -252,3 +326,5 @@ When autonomous agents or subagents interact with Jira, adhere to the following 
 - **[board-workflow-standard.md](file:///d:/Projects/Personal/agent-jira-integration/references/board-workflow-standard.md)**: Mandatory board stages, transition rules, and DoD gate specifications.
 - **[jira-api-reference.md](file:///d:/Projects/Personal/agent-jira-integration/references/jira-api-reference.md)**: Jira Cloud REST v3 / Data Center v2 endpoints, ADF syntax, and JQL patterns.
 - **[security-and-caching.md](file:///d:/Projects/Personal/agent-jira-integration/references/security-and-caching.md)**: Zero-Leak credential isolation, `.agent/jira.json` schema, and POSIX permissions.
+- **[AGENTS.md](file:///d:/Projects/Personal/agent-jira-integration/AGENTS.md)**: Universal multi-agent agile instructions.
+- **[CLAUDE.md](file:///d:/Projects/Personal/agent-jira-integration/CLAUDE.md)**: Anthropic Claude and Claude Code guidelines.

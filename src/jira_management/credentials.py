@@ -37,11 +37,27 @@ def mask_token(token: Optional[str]) -> str:
 def find_project_root(start_dir: Optional[Union[str, Path]] = None) -> Path:
     """Find the root directory of the current project by walking up the filesystem.
     
-    Identifies root by the presence of .git, .agent, package.json, pyproject.toml, or .env.
+    Identifies root by the presence of .git, .agent, .claude, .cursor, package.json,
+    pyproject.toml, AGENTS.md, CLAUDE.md, .cursorrules, or .env.
     Falls back to current working directory if no root markers are detected.
     """
     current = Path(start_dir or os.getcwd()).resolve()
-    markers = [".git", CACHE_DIR_NAME, "pyproject.toml", "package.json", "go.mod", "Cargo.toml", ".env"]
+    markers = [
+        ".git",
+        CACHE_DIR_NAME,
+        ".claude",
+        ".cursor",
+        ".github",
+        "pyproject.toml",
+        "package.json",
+        "go.mod",
+        "Cargo.toml",
+        ".env",
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".cursorrules",
+        ".windsurfrules",
+    ]
 
     for parent in [current, *current.parents]:
         if any((parent / marker).exists() for marker in markers):
@@ -53,28 +69,33 @@ def find_project_root(start_dir: Optional[Union[str, Path]] = None) -> Path:
 def ensure_gitignore_protection(project_root: Path, entry: str = ".agent/") -> bool:
     """Ensure that the project's .gitignore exists and contains the credential cache entry.
     
-    Enforces Priority 7: Zero-Leak Secret Security.
+    Enforces Priority 7: Zero-Leak Secret Security across all agents.
     """
     gitignore_path = project_root / ".gitignore"
     entry_clean = entry.strip()
+
+    entries_to_add = [entry_clean, ".claude/jira.json", ".cursor/jira.json", ".env", ".env.*"]
 
     if gitignore_path.exists():
         try:
             content = gitignore_path.read_text(encoding="utf-8")
             lines = [line.strip() for line in content.splitlines()]
-            normalized_entry = entry_clean.rstrip("/")
-            if any(line == entry_clean or line == normalized_entry or line == f"{normalized_entry}/*" for line in lines):
-                return True
+            missing = []
+            for item in entries_to_add:
+                item_clean = item.rstrip("/")
+                if not any(l == item or l == item_clean or l == f"{item_clean}/*" for l in lines):
+                    missing.append(item)
 
-            with open(gitignore_path, "a", encoding="utf-8") as f:
-                f.write(f"\n# Jira credentials & agent cache (Auto-added by jira-management skill)\n{entry_clean}\n.env\n.env.*\n")
+            if missing:
+                with open(gitignore_path, "a", encoding="utf-8") as f:
+                    f.write("\n# Multi-agent Jira credentials & cache (Auto-added by jira-management)\n" + "\n".join(missing) + "\n")
             return True
         except Exception:
             return False
     else:
         try:
             with open(gitignore_path, "w", encoding="utf-8") as f:
-                f.write(f"# Jira credentials & agent cache (Auto-added by jira-management skill)\n{entry_clean}\n.env\n.env.*\n")
+                f.write("# Multi-agent Jira credentials & cache (Auto-added by jira-management)\n" + "\n".join(entries_to_add) + "\n")
             return True
         except Exception:
             return False
@@ -82,13 +103,35 @@ def ensure_gitignore_protection(project_root: Path, entry: str = ".agent/") -> b
 
 
 def get_project_cache_path(project_root: Path) -> Path:
-    """Return the absolute path to the project's jira cache file."""
+    """Return the absolute path to the project's primary jira cache file."""
     return project_root / CACHE_DIR_NAME / CACHE_FILE_NAME
 
 
+def get_all_project_cache_paths(project_root: Path) -> List[Path]:
+    """Return all recognized project-level cache locations across various agents."""
+    return [
+        project_root / CACHE_DIR_NAME / CACHE_FILE_NAME,
+        project_root / ".claude" / CACHE_FILE_NAME,
+        project_root / ".cursor" / CACHE_FILE_NAME,
+    ]
+
+
 def get_global_cache_path() -> Path:
-    """Return the path to the user's global config cache."""
+    """Return the primary path to the user's global config cache."""
     return Path.home() / ".gemini" / "config" / CACHE_FILE_NAME
+
+
+def get_all_global_cache_paths() -> List[Path]:
+    """Return all recognized global cache locations across supported agents."""
+    home = Path.home()
+    return [
+        home / ".gemini" / "config" / CACHE_FILE_NAME,
+        home / ".claude" / CACHE_FILE_NAME,
+        home / ".cursor" / CACHE_FILE_NAME,
+        home / ".config" / "jira" / CACHE_FILE_NAME,
+        home / ".jira" / CACHE_FILE_NAME,
+        home / ".jira" / "config.json",
+    ]
 
 
 def read_env_file(env_path: Path) -> Dict[str, str]:
@@ -148,23 +191,23 @@ def resolve_credentials(
     if is_auth_complete(result):
         return result
 
-    # 2. Check Project Cache (.agent/jira.json)
-    cache_path = get_project_cache_path(root)
-    if cache_path.exists():
-        try:
-            cache_data = json.loads(cache_path.read_text(encoding="utf-8"))
-            profiles = cache_data.get("profiles", {})
-            prof = profiles.get(profile, {})
-            result["url"] = result["url"] or prof.get("url")
-            result["email"] = result["email"] or prof.get("email")
-            result["token"] = result["token"] or prof.get("token")
-            result["project"] = result["project"] or prof.get("project")
-            result["board_id"] = result["board_id"] or prof.get("board_id")
-            if is_auth_complete(result):
-                result["source"] = f"project_cache ({cache_path})"
-                return result
-        except Exception:
-            pass
+    # 2. Check Project Caches (.agent/jira.json, .claude/jira.json, .cursor/jira.json)
+    for cache_path in get_all_project_cache_paths(root):
+        if cache_path.exists():
+            try:
+                cache_data = json.loads(cache_path.read_text(encoding="utf-8"))
+                profiles = cache_data.get("profiles", {})
+                prof = profiles.get(profile, {})
+                result["url"] = result["url"] or prof.get("url")
+                result["email"] = result["email"] or prof.get("email")
+                result["token"] = result["token"] or prof.get("token")
+                result["project"] = result["project"] or prof.get("project")
+                result["board_id"] = result["board_id"] or prof.get("board_id")
+                if is_auth_complete(result):
+                    result["source"] = f"project_cache ({cache_path})"
+                    return result
+            except Exception:
+                pass
 
     # 3. Check Project .env
     env_vars = read_env_file(root / ".env")
@@ -194,22 +237,22 @@ def resolve_credentials(
         result["source"] = "environment_variables"
         return result
 
-    # 5. Check Global User Cache (~/.gemini/config/jira.json)
-    global_cache = get_global_cache_path()
-    if global_cache.exists():
-        try:
-            cache_data = json.loads(global_cache.read_text(encoding="utf-8"))
-            prof = cache_data.get("profiles", {}).get(profile, {})
-            result["url"] = result["url"] or prof.get("url")
-            result["email"] = result["email"] or prof.get("email")
-            result["token"] = result["token"] or prof.get("token")
-            result["project"] = result["project"] or prof.get("project")
-            result["board_id"] = result["board_id"] or prof.get("board_id")
-            if is_auth_complete(result):
-                result["source"] = f"global_cache ({global_cache})"
-                return result
-        except Exception:
-            pass
+    # 5. Check Global User Caches (~/.gemini, ~/.claude, ~/.cursor, ~/.config/jira, ~/.jira)
+    for global_cache in get_all_global_cache_paths():
+        if global_cache.exists():
+            try:
+                cache_data = json.loads(global_cache.read_text(encoding="utf-8"))
+                prof = cache_data.get("profiles", {}).get(profile, {})
+                result["url"] = result["url"] or prof.get("url")
+                result["email"] = result["email"] or prof.get("email")
+                result["token"] = result["token"] or prof.get("token")
+                result["project"] = result["project"] or prof.get("project")
+                result["board_id"] = result["board_id"] or prof.get("board_id")
+                if is_auth_complete(result):
+                    result["source"] = f"global_cache ({global_cache})"
+                    return result
+            except Exception:
+                pass
 
     return result
 

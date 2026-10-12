@@ -1,0 +1,14 @@
+# Cline & Roo Code Rules: Jira Management
+
+This workspace uses the Jira Management CLI (`jira` / `jira-management`) and MCP server.
+
+## Directives
+1. **Zero-Leak Protocol**: Never read, print, or expose raw Jira credentials.
+2. **Strict 5-Stage Progression**:
+   - Backlog -> To Do -> In Progress -> In Review -> Done.
+   - Transitions to `Done` MUST include verification evidence via `--comment` or `--dod-report`.
+3. **CLI Commands**:
+   - Check connection: `jira auth status --json`
+   - Progress issue: `jira issue transition --key <KEY> --to "In Progress"`
+   - Ready for review: `jira issue transition --key <KEY> --to "In Review"`
+   - Complete issue: `jira issue transition --key <KEY> --to "Done" --comment "Verified: <evidence>"`

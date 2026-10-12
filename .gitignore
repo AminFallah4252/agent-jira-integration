@@ -1,6 +1,8 @@
 # Jira credentials & agent cache (Zero-Leak Protocol)
 .agent/
 .agents/
+.claude/jira.json
+.cursor/jira.json
 .env
 .env.*
 *.pem

@@ -602,6 +602,107 @@ def handle_project_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
+def handle_agents_cmd(args: argparse.Namespace) -> int:
+    """Handle 'agents' subcommands: list, setup, mcp-config."""
+    from .agents import (
+        get_mcp_config_dict,
+        list_supported_agents,
+        setup_agent_rules,
+    )
+    from .credentials import find_project_root
+
+    sub = args.agents_action
+
+    if sub == "list":
+        root = Path(args.target_dir).resolve() if getattr(args, "target_dir", None) else find_project_root()
+        agents = list_supported_agents(root)
+        if args.json:
+            print(json.dumps(agents, indent=2))
+            return 0
+
+        print_header("Supported AI Coding Agents & Integration Status")
+        print(f"Target Directory: {root}\n")
+        for ag in agents:
+            status_symbol = {
+                "fully_installed": "[READY]",
+                "partially_installed": "[PARTIAL]",
+                "not_installed": "[NOT INSTALLED]",
+            }.get(ag["status"], "[?]")
+            print(f"• {ag['name']:<32} {status_symbol:<15}")
+            print(f"  Description : {ag['description']}")
+            print(f"  Files       : {', '.join(ag['all_files'])}")
+            if ag["installed_files"]:
+                print(f"  Installed   : {', '.join(ag['installed_files'])}")
+            if ag["missing_files"]:
+                print(f"  Missing     : {', '.join(ag['missing_files'])}")
+            print()
+        return 0
+
+    elif sub == "setup":
+        target = Path(args.target_dir).resolve() if args.target_dir else find_project_root()
+        selected_agents = [args.agent] if args.agent and args.agent != "all" else ["all"]
+        include_mcp = not args.no_mcp
+        force = args.force
+
+        print(f"[*] Setting up agent rules in: {target}...")
+        result = setup_agent_rules(
+            target_dir=target,
+            agent_names=selected_agents,
+            force=force,
+            include_mcp=include_mcp,
+        )
+
+        if args.json:
+            print(json.dumps({
+                "target_dir": str(target),
+                "created": [str(p) for p in result["created"]],
+                "skipped": [str(p) for p in result["skipped"]],
+            }, indent=2))
+            return 0
+
+        if result["created"]:
+            print_success(f"Generated {len(result['created'])} agent file(s):")
+            for p in result["created"]:
+                try:
+                    rel = p.relative_to(target)
+                except Exception:
+                    rel = p
+                print(f"  + {rel}")
+        if result["skipped"]:
+            print_warning(f"Skipped {len(result['skipped'])} existing file(s) (use --force to overwrite):")
+            for p in result["skipped"]:
+                try:
+                    rel = p.relative_to(target)
+                except Exception:
+                    rel = p
+                print(f"  ~ {rel}")
+        return 0
+
+    elif sub == "mcp-config":
+        cfg = get_mcp_config_dict(python_cmd=args.python_cmd or "python")
+        if args.write:
+            target = Path(args.target_dir).resolve() if args.target_dir else find_project_root()
+            cursor_mcp = target / ".cursor" / "mcp.json"
+            cursor_mcp.parent.mkdir(parents=True, exist_ok=True)
+            cursor_mcp.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
+            mcp_root = target / ".mcp.json"
+            mcp_root.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
+            print_success(f"Wrote MCP configuration to {cursor_mcp} and {mcp_root}")
+            return 0
+
+        print(json.dumps(cfg, indent=2))
+        return 0
+
+    return 0
+
+
+def handle_mcp_cmd(args: argparse.Namespace) -> int:
+    """Handle 'mcp' command to launch the stdio MCP server."""
+    from .mcp import run_mcp_server
+    run_mcp_server()
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="jira",
@@ -711,6 +812,29 @@ def build_parser() -> argparse.ArgumentParser:
     p_proj_get = s_proj.add_parser("get", help="Get project details")
     p_proj_get.add_argument("--key", help="Project key")
 
+    # 6. Agents command (Multi-agent rules, instructions, and configs)
+    p_agents = subparsers.add_parser("agents", help="Manage multi-agent configurations (Claude, Cursor, Windsurf, Copilot, Cline, Antigravity)")
+    s_agents = p_agents.add_subparsers(dest="agents_action", required=True)
+
+    p_agents_list = s_agents.add_parser("list", help="List supported agents and local installation status")
+    p_agents_list.add_argument("--target-dir", help="Target project directory (default: current project root)")
+    p_agents_list.add_argument("--json", action="store_true", help="Output machine-readable JSON")
+
+    p_agents_setup = s_agents.add_parser("setup", help="Generate instructions/rules for AI agents in target project")
+    p_agents_setup.add_argument("--agent", choices=["all", "claude", "cursor", "windsurf", "copilot", "cline", "universal", "antigravity"], default="all", help="Target AI agent (default: all)")
+    p_agents_setup.add_argument("--target-dir", help="Target directory (default: current project root)")
+    p_agents_setup.add_argument("--force", action="store_true", help="Overwrite existing agent instruction files")
+    p_agents_setup.add_argument("--no-mcp", action="store_true", help="Do not generate MCP configuration files")
+    p_agents_setup.add_argument("--json", action="store_true", help="Output machine-readable JSON")
+
+    p_agents_mcp = s_agents.add_parser("mcp-config", help="Export Model Context Protocol (MCP) configuration JSON")
+    p_agents_mcp.add_argument("--python-cmd", default="python", help="Python executable name/path for MCP command")
+    p_agents_mcp.add_argument("--write", action="store_true", help="Write configuration directly to .cursor/mcp.json and .mcp.json")
+    p_agents_mcp.add_argument("--target-dir", help="Target directory to write MCP configuration")
+
+    # 7. MCP server command (JSON-RPC 2.0 stdio transport)
+    subparsers.add_parser("mcp", help="Launch Model Context Protocol (MCP) stdio server for Claude, Cursor, Windsurf, Cline")
+
     return parser
 
 
@@ -723,7 +847,9 @@ def main() -> None:
         "board": handle_board_cmd,
         "issue": handle_issue_cmd,
         "sprint": handle_sprint_cmd,
-        "project": handle_project_cmd
+        "project": handle_project_cmd,
+        "agents": handle_agents_cmd,
+        "mcp": handle_mcp_cmd,
     }
 
     handler = handlers.get(args.command)

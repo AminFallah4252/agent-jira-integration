@@ -1,0 +1,20 @@
+# Windsurf Rules: Jira Management & Agile Protocol
+
+You are operating in a repository integrated with Jira Management (`jira`). Adhere to these instructions:
+
+## Agile Lifecycle & Quality Gates
+- Every Jira issue must follow the 5 standard stages in sequential order:
+  Stage 1 (Backlog) -> Stage 2 (To Do) -> Stage 3 (In Progress) -> Stage 4 (In Review) -> Stage 5 (Done)
+- Never skip intermediate stages.
+- Transition to `Done` requires concrete Definition of Done (DoD) evidence (test command output, build verification) attached via `--comment` or `--dod-report`.
+
+## Zero-Leak Secrets
+- Do not expose or log tokens.
+- Credentials resolve automatically from `.agent/jira.json`, `.env`, or environment variables.
+
+## Key CLI Operations
+- Status check: `jira auth status --json`
+- Pick up issue: `jira issue transition --key <KEY> --to "In Progress"`
+- Request review: `jira issue transition --key <KEY> --to "In Review"`
+- Mark done: `jira issue transition --key <KEY> --to "Done" --comment "Verified: tests passed"`
+- Log work: `jira issue worklog --key <KEY> --time "2h" --comment "Implemented feature"`

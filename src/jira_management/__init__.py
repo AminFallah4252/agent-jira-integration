@@ -20,9 +20,17 @@ from .constants import (
     ORDERED_STAGES,
     __version__,
 )
+from .agents import (
+    SUPPORTED_AGENTS,
+    get_mcp_config_dict,
+    list_supported_agents,
+    setup_agent_rules,
+)
 from .credentials import (
     ensure_gitignore_protection,
     find_project_root,
+    get_all_global_cache_paths,
+    get_all_project_cache_paths,
     get_global_cache_path,
     get_project_cache_path,
     mask_token,
@@ -30,6 +38,12 @@ from .credentials import (
     remove_credentials_from_cache,
     resolve_credentials,
     save_credentials_to_cache,
+)
+from .mcp import (
+    TOOLS_DEFINITIONS,
+    McpServer,
+    execute_tool,
+    run_mcp_server,
 )
 from .workflow import (
     audit_board_compliance,
@@ -50,7 +64,9 @@ __all__ = [
     "find_project_root",
     "ensure_gitignore_protection",
     "get_project_cache_path",
+    "get_all_project_cache_paths",
     "get_global_cache_path",
+    "get_all_global_cache_paths",
     "read_env_file",
     "resolve_credentials",
     "save_credentials_to_cache",
@@ -64,4 +80,12 @@ __all__ = [
     "validate_issue_transition_order",
     "build_parser",
     "main",
+    "SUPPORTED_AGENTS",
+    "list_supported_agents",
+    "setup_agent_rules",
+    "get_mcp_config_dict",
+    "McpServer",
+    "run_mcp_server",
+    "execute_tool",
+    "TOOLS_DEFINITIONS",
 ]

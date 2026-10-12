@@ -343,5 +343,40 @@ class TestMockJiraClient(unittest.TestCase):
         self.assertEqual(boards[0]["name"], "Main Scrum Board")
 
 
+class TestAgentsCliParser(unittest.TestCase):
+    def test_parse_agents_list(self):
+        from jira_cli import build_parser
+        parser = build_parser()
+        args = parser.parse_args(["agents", "list", "--target-dir", "./test_dir", "--json"])
+        self.assertEqual(args.command, "agents")
+        self.assertEqual(args.agents_action, "list")
+        self.assertEqual(args.target_dir, "./test_dir")
+        self.assertTrue(args.json)
+
+    def test_parse_agents_setup(self):
+        from jira_cli import build_parser
+        parser = build_parser()
+        args = parser.parse_args(["agents", "setup", "--agent", "cursor", "--force"])
+        self.assertEqual(args.command, "agents")
+        self.assertEqual(args.agents_action, "setup")
+        self.assertEqual(args.agent, "cursor")
+        self.assertTrue(args.force)
+
+    def test_parse_agents_mcp_config(self):
+        from jira_cli import build_parser
+        parser = build_parser()
+        args = parser.parse_args(["agents", "mcp-config", "--python-cmd", "python3"])
+        self.assertEqual(args.command, "agents")
+        self.assertEqual(args.agents_action, "mcp-config")
+        self.assertEqual(args.python_cmd, "python3")
+
+    def test_parse_mcp_command(self):
+        from jira_cli import build_parser
+        parser = build_parser()
+        args = parser.parse_args(["mcp"])
+        self.assertEqual(args.command, "mcp")
+
+
 if __name__ == "__main__":
     unittest.main()
+

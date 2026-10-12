@@ -1,0 +1,22 @@
+# Cursor AI Rules: Jira Management & Agile Quality Gates
+
+This repository uses the Jira Management CLI/SDK (`jira`). Cursor Composer and Agent must follow these directives:
+
+## 1. Sequential Agile Workflow & DoD Gates
+- Progress issues strictly in sequence: `Backlog` -> `To Do` -> `In Progress` -> `In Review` -> `Done`.
+- Never transition directly from `To Do` or `Backlog` to `Done`.
+- Transitioning to `Done` requires explicit Definition of Done (DoD) verification evidence (test outputs, build results) passed via `--comment` or `--dod-report`.
+- Keep Work In Progress (WIP) low: focus on 1 active issue at a time.
+
+## 2. Zero-Leak Credential Safety
+- Never hardcode or display API tokens or PATs.
+- Credentials auto-resolve from `.agent/jira.json`, `.cursor/jira.json`, `.env`, or environment variables.
+- Ensure `.agent/` and `.env*` remain in `.gitignore`.
+
+## 3. Recommended Commands for Cursor Terminal
+- Verify authentication: `jira auth status --json`
+- View board status: `jira board view`
+- Pick up task: `jira issue transition --key <KEY> --to "In Progress"`
+- Submit for review: `jira issue transition --key <KEY> --to "In Review"`
+- Close with DoD: `jira issue transition --key <KEY> --to "Done" --comment "Verified with tests"`
+- Traceability: Cite issue keys in branch names and commit messages (`feat: [#KEY] message`).
